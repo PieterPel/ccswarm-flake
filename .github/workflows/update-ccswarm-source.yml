@@ -1,0 +1,45 @@
+name: Update CCSwarm Source
+
+on:
+  workflow_dispatch: # Allows manual triggering
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight UTC
+
+jobs:
+  update-source:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          python-version: '3.x'
+
+      - name: Install Python dependencies
+        working-directory: scripts
+        run: uv sync
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v12
+        with:
+          extra-features: nix-command flakes
+
+      - name: Run update script
+        working-directory: scripts
+        run: .venv/bin/python update_ccswarm_flake.py
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(deps): Update ccswarm source to latest release"
+          title: "chore(deps): Update ccswarm source"
+          body: "This PR updates the ccswarm source in flake.nix to the latest release."
+          branch: "update-ccswarm-source"
+          delete-branch: true
