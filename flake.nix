@@ -1,5 +1,5 @@
 {
-  description = "CCSwarm - Multi-agent orchestration system using Claude Code with Git worktree isolation";
+  description = "CCSwarm - Multi-agent orchestration system: declarative and reprodicible package";
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -8,11 +8,31 @@
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = inputs@{ flake-parts, nixpkgs, rust-overlay, ... }:
+  outputs =
+    inputs@{
+      flake-parts,
+      nixpkgs,
+      rust-overlay,
+      ...
+    }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+        "x86_64-darwin"
+      ];
 
-      perSystem = { config, self', inputs', pkgs, system, lib, ... }:
+      perSystem =
+        {
+          config,
+          self',
+          inputs',
+          pkgs,
+          system,
+          lib,
+          ...
+        }:
         let
           overlays = [ (import rust-overlay) ];
           pkgsWithRust = import nixpkgs {
@@ -20,7 +40,11 @@
           };
 
           rustToolchain = pkgsWithRust.rust-bin.stable.latest.default.override {
-            extensions = [ "rust-src" "rustfmt" "clippy" ];
+            extensions = [
+              "rust-src"
+              "rustfmt"
+              "clippy"
+            ];
           };
 
           ccswarm = pkgsWithRust.rustPlatform.buildRustPackage rec {
@@ -43,17 +67,20 @@
               rustToolchain
             ];
 
-            buildInputs = with pkgsWithRust; [
-              openssl
-              git
-            ] ++ lib.optionals pkgsWithRust.stdenv.isDarwin [
-              libiconv
-            ];
+            buildInputs =
+              with pkgsWithRust;
+              [
+                openssl
+                git
+              ]
+              ++ lib.optionals pkgsWithRust.stdenv.isDarwin [
+                libiconv
+              ];
 
             # Handle workspace structure if needed - will be determined during build
 
             meta = with lib; {
-              description = "Multi-agent orchestration system using Claude Code with Git worktree isolation";
+              description = "Multi-agent orchestration system";
               homepage = "https://github.com/nwiizo/ccswarm";
               license = licenses.mit;
               maintainers = [ ];
@@ -80,20 +107,23 @@
           };
 
           devShells.default = pkgsWithRust.mkShell {
-            buildInputs = with pkgsWithRust; [
-              rustToolchain
-              rust-analyzer
-              pkg-config
-              openssl
-              git
+            buildInputs =
+              with pkgsWithRust;
+              [
+                rustToolchain
+                rust-analyzer
+                pkg-config
+                openssl
+                git
 
-              # Additional development tools
-              cargo-watch
-              cargo-edit
-              cargo-audit
-            ] ++ lib.optionals pkgsWithRust.stdenv.isDarwin [
-              libiconv
-            ];
+                # Additional development tools
+                cargo-watch
+                cargo-edit
+                cargo-audit
+              ]
+              ++ lib.optionals pkgsWithRust.stdenv.isDarwin [
+                libiconv
+              ];
 
             shellHook = ''
               echo "🦀 CCSwarm development environment"
